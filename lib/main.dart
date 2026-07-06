@@ -4,6 +4,8 @@ void main() {
   runApp(const NatureGalleryApp());
 }
 
+//added comments
+
 class NatureGalleryApp extends StatelessWidget {
   const NatureGalleryApp({super.key});
 
