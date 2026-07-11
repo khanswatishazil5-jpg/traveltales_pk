@@ -1,30 +1,127 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // CLO3: persistence package
 
 void main() {
+  // WidgetsFlutterBinding must be ready before we touch SharedPreferences
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const NatureGalleryApp());
 }
 
-class NatureGalleryApp extends StatelessWidget {
+//added comments
+
+/* ============================================================
+   CLO3 CHANGE #1
+   NatureGalleryApp is now STATEFUL so it can:2
+
+     1. Read the saved seed color from SharedPreferences on launch
+     2. Rebuild the whole MaterialApp (and therefore the global
+        theme) the instant the user picks a new color
+   Any widget in the tree can reach this state with
+   `NatureGalleryApp.of(context)` and call `updateSeedColor(name)`.
+   ============================================================ */
+class NatureGalleryApp extends StatefulWidget {
   const NatureGalleryApp({super.key});
 
   @override
+  State<NatureGalleryApp> createState() => _NatureGalleryAppState();
+
+  /// Lets any descendant widget grab the state and change the theme.
+  static _NatureGalleryAppState? of(BuildContext context) =>
+      context.findAncestorStateOfType<_NatureGalleryAppState>();
+}
+
+class _NatureGalleryAppState extends State<NatureGalleryApp> {
+  // Key used to store/retrieve the color inside SharedPreferences
+  static const String _prefsKey = 'seed_color_name';
+
+  // Default seed color used the very first time the app is opened
+  // (i.e. when nothing has been saved yet)
+  Color _seedColor = Colors.blue;
+
+  // Simple flag so we don't flash the default theme before the
+  // saved value has finished loading from disk
+  bool _isLoading = true;
+
+  // The dropdown options: a friendly name mapped to a real Color.
+  // We store the *name* (a String) in SharedPreferences because
+  // SharedPreferences cannot store a Color object directly.
+  static const Map<String, Color> colorOptions = {
+    'Forest Green': Color(0xFF1E4620),
+    'Ocean Blue': Colors.blue,
+    'Deep Purple': Colors.deepPurple,
+    'Teal': Colors.teal,
+    'Sunset Orange': Colors.deepOrange,
+    'Blossom Pink': Colors.pink,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedColor();
+  }
+
+  /// STEP 1 of the assignment: on startup, check SharedPreferences
+  /// for a saved color. If found, use it. If not, keep the default.
+  Future<void> _loadSavedColor() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedName = prefs.getString(_prefsKey);
+
+    setState(() {
+      if (savedName != null && colorOptions.containsKey(savedName)) {
+        _seedColor = colorOptions[savedName]!;
+      }
+      _isLoading = false;
+    });
+  }
+
+  /// STEP 2 of the assignment: called when the user picks a new
+  /// color from the dropdown. Saves it to SharedPreferences AND
+  /// updates state so the whole app rebuilds with the new theme.
+  Future<void> updateSeedColor(String colorName) async {
+    if (!colorOptions.containsKey(colorName)) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefsKey, colorName); // persist immediately
+
+    setState(() {
+      _seedColor = colorOptions[colorName]!; // rebuild global theme now
+    });
+  }
+
+  /// Helper so UI code (the dropdown) can show which color is
+  /// currently selected without keeping a second copy of state.
+  String get currentColorName {
+    return colorOptions.entries
+        .firstWhere(
+          (entry) => entry.value == _seedColor,
+          orElse: () => colorOptions.entries.first,
+        )
+        .key;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // While we're still reading SharedPreferences, show a tiny
+    // loading screen instead of a flash of the wrong theme.
+    if (_isLoading) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(body: Center(child: CircularProgressIndicator())),
+      );
+    }
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Earthy Nature Gallery',
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1E4620),
-          primary: const Color(0xFF1E4620),
-          secondary: const Color(0xFF8D6E63),
-          surface: const Color(0xFFF9FBE7),
-        ),
+        // CLO3: the ENTIRE color scheme is now derived from the
+        // seed color the user picked (or the saved/default one).
+        colorScheme: ColorScheme.fromSeed(seedColor: _seedColor),
         fontFamily: 'Poppins',
-        // Assignment 2: Advanced Shape and Elevation Settings
         cardTheme: CardThemeData(
           elevation: 6,
-          shadowColor: const Color(0xFF1E4620).withOpacity(0.2),
+          shadowColor: _seedColor.withOpacity(0.2),
           shape: const BeveledRectangleBorder(
             borderRadius: BorderRadius.only(
               topRight: Radius.circular(16),
@@ -37,7 +134,7 @@ class NatureGalleryApp extends StatelessWidget {
           fillColor: Colors.white,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF1E4620)),
+            borderSide: BorderSide(color: _seedColor),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -69,6 +166,7 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       body: screens[index],
       bottomNavigationBar: NavigationBar(
@@ -78,7 +176,7 @@ class _MainScreenState extends State<MainScreen> {
             index = i;
           });
         },
-        indicatorColor: const Color(0xFFC5E1A5),
+        indicatorColor: scheme.primaryContainer,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.blur_on_rounded),
@@ -116,11 +214,12 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text("🌿 Earthy Gallery", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         centerTitle: true,
-        backgroundColor: const Color(0xFF1E4620),
+        backgroundColor: scheme.primary,
         elevation: 2,
       ),
       body: SingleChildScrollView(
@@ -129,9 +228,9 @@ class HomePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 "Discover Wonders",
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Color(0xFF1E4620)),
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: scheme.primary),
               ),
               const SizedBox(height: 12),
               Stack(
@@ -178,9 +277,9 @@ class HomePage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 "Curated Collections",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E4620)),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: scheme.primary),
               ),
               const SizedBox(height: 12),
               GridView.builder(
@@ -248,10 +347,11 @@ class GalleryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text("Collection Room", style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF1E4620),
+        backgroundColor: scheme.primary,
       ),
       body: Center(
         child: Padding(
@@ -259,7 +359,7 @@ class GalleryPage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.lock_outline_rounded, size: 80, color: const Color(0xFF8D6E63).withOpacity(0.6)),
+              Icon(Icons.lock_outline_rounded, size: 80, color: scheme.secondary.withOpacity(0.6)),
               const SizedBox(height: 16),
               const Text(
                 "Unlock Vault",
@@ -275,7 +375,7 @@ class GalleryPage extends StatelessWidget {
               ElevatedButton.icon(
                 icon: const Icon(Icons.vpn_key),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1E4620),
+                  backgroundColor: scheme.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -312,20 +412,92 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final appState = NatureGalleryApp.of(context);
+    final currentColorName = appState?.currentColorName ?? 'Forest Green';
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Access Portal", style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF1E4620),
+        backgroundColor: scheme.primary,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
             const SizedBox(height: 20),
-            const Icon(Icons.flutter_dash_rounded, size: 70, color: Color(0xFF1E4620)),
+            Icon(Icons.flutter_dash_rounded, size: 70, color: scheme.primary),
             const SizedBox(height: 12),
             const Text("Welcome Back Explorer", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 24),
+
+            /* ============================================================
+               CLO3 CHANGE #2 — THE REQUIRED DROPDOWN
+               Lets the user pick a favorite color. On change we:
+                 1. Save the choice to SharedPreferences (via updateSeedColor)
+                 2. Trigger setState() in NatureGalleryApp, which rebuilds
+                    ThemeData with the new seed color -> global theme change
+               ============================================================ */
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "App Theme Color",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: scheme.primary),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Pick your favorite color — it's saved automatically and reapplied every time you reopen the app.",
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    ),
+                    const SizedBox(height: 14),
+                    DropdownButtonFormField<String>(
+                      value: currentColorName,
+                      decoration: const InputDecoration(
+                        labelText: "Favorite Color",
+                        prefixIcon: Icon(Icons.palette_outlined),
+                      ),
+                      items: _NatureGalleryAppState.colorOptions.keys.map((name) {
+                        return DropdownMenuItem<String>(
+                          value: name,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 16,
+                                height: 16,
+                                decoration: BoxDecoration(
+                                  color: _NatureGalleryAppState.colorOptions[name],
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.grey.shade300),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(name),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        NatureGalleryApp.of(context)?.updateSeedColor(value);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("Theme set to $value and saved!"),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 30),
+
             const TextField(
               decoration: InputDecoration(
                 labelText: "Email/Username",
@@ -346,7 +518,7 @@ class LoginPage extends StatelessWidget {
               height: 50,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1E4620),
+                  backgroundColor: scheme.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -366,7 +538,7 @@ class LoginPage extends StatelessWidget {
                   MaterialPageRoute(builder: (_) => const SignupPage()),
                 );
               },
-              child: const Text("New Explorer? Setup Account", style: TextStyle(color: Color(0xFF8D6E63))),
+              child: Text("New Explorer? Setup Account", style: TextStyle(color: scheme.secondary)),
             ),
           ],
         ),
@@ -381,18 +553,19 @@ class SignupPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text("Register", style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF1E4620),
+        backgroundColor: scheme.primary,
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: ListView(
           children: [
             const Text(
-              "Create Profile", 
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold), 
+              "Create Profile",
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -408,7 +581,7 @@ class SignupPage extends StatelessWidget {
             const SizedBox(height: 24),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1E4620),
+                backgroundColor: scheme.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -448,12 +621,13 @@ class GalleryAfterLogin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: const Text("Premium Vault", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          backgroundColor: const Color(0xFF1E4620),
+          backgroundColor: scheme.primary,
           iconTheme: const IconThemeData(color: Colors.white),
           actions: [
             IconButton(
@@ -481,13 +655,13 @@ class GalleryAfterLogin extends StatelessWidget {
         body: TabBarView(
           children: [
             // Tab One Content Layout
-            buildGridTabContent(premiumImages),
+            buildGridTabContent(context, premiumImages),
             // Tab Two Content Layout
-            buildGridTabContent(trailMaps),
+            buildGridTabContent(context, trailMaps),
           ],
         ),
         floatingActionButton: FloatingActionButton.extended(
-          backgroundColor: const Color(0xFF1E4620),
+          backgroundColor: scheme.primary,
           foregroundColor: Colors.white,
           onPressed: () {},
           icon: const Icon(Icons.add_photo_alternate_outlined),
@@ -497,23 +671,24 @@ class GalleryAfterLogin extends StatelessWidget {
     );
   }
 
-  Widget buildGridTabContent(List<Map<String, String>> sourceList) {
+  Widget buildGridTabContent(BuildContext context, List<Map<String, String>> sourceList) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Synchronized Assets (${sourceList.length})", 
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E4620)),
+            "Synchronized Assets (${sourceList.length})",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: scheme.primary),
           ),
           const SizedBox(height: 12),
           Expanded(
             child: GridView.builder(
               itemCount: sourceList.length,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, 
-                crossAxisSpacing: 12, 
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
               ),
               itemBuilder: (ctx, idx) => ClipRRect(
@@ -522,11 +697,11 @@ class GalleryAfterLogin extends StatelessWidget {
                   fit: StackFit.expand,
                   children: [
                     Image.asset(
-                      sourceList[idx]['img']!, 
-                      fit: BoxFit.cover, 
+                      sourceList[idx]['img']!,
+                      fit: BoxFit.cover,
                       errorBuilder: (c, e, s) => Container(
-                        color: const Color(0xFFC5E1A5), 
-                        child: const Icon(Icons.landscape_rounded, color: Color(0xFF1E4620)),
+                        color: scheme.primaryContainer,
+                        child: Icon(Icons.landscape_rounded, color: scheme.primary),
                       ),
                     ),
                     Positioned(
@@ -535,8 +710,8 @@ class GalleryAfterLogin extends StatelessWidget {
                         padding: const EdgeInsets.all(8),
                         color: Colors.black45,
                         child: Text(
-                          sourceList[idx]['name']!, 
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13), 
+                          sourceList[idx]['name']!,
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                           textAlign: TextAlign.center,
                         ),
                       ),
