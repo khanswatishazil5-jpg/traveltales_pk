@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/post_model.dart';
 import '../theme/app_theme.dart';
 import 'question_box.dart';
+import 'post_image.dart';
 
 /// Renders a single travel post: header (avatar, username, location),
 /// photo, action row (like/comment/save/share), caption, and the
@@ -50,7 +51,7 @@ class _PostCardState extends State<PostCard> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: AspectRatio(
                 aspectRatio: 4 / 3,
-                child: Image.network(post.imageUrl, fit: BoxFit.cover),
+                child: PostImage(source: post.imageUrl, fit: BoxFit.cover),
               ),
             ),
           ),

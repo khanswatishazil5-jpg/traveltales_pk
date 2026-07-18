@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/post_model.dart';
 import '../models/user_model.dart';
 import '../theme/app_theme.dart';
+import 'post_image.dart';
+import '../services/follow_repository.dart';
 
 /// One row in the Explore search results when searching Places.
 class PlaceResultTile extends StatelessWidget {
@@ -26,9 +28,42 @@ class PlaceResultTile extends StatelessWidget {
 }
 
 /// One row in the Explore search results when searching People.
-class PersonResultTile extends StatelessWidget {
+class PersonResultTile extends StatefulWidget {
   final UserModel user;
   const PersonResultTile({super.key, required this.user});
+
+  @override
+  State<PersonResultTile> createState() => _PersonResultTileState();
+}
+
+class _PersonResultTileState extends State<PersonResultTile> {
+  final _followRepository = FollowRepository();
+  bool _following = false;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final following = await _followRepository.isFollowing(widget.user.username);
+    if (!mounted) return;
+    setState(() {
+      _following = following;
+      _loading = false;
+    });
+  }
+
+  Future<void> _toggle() async {
+    setState(() => _following = !_following);
+    if (_following) {
+      await _followRepository.follow(widget.user.username);
+    } else {
+      await _followRepository.unfollow(widget.user.username);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,11 +71,12 @@ class PersonResultTile extends StatelessWidget {
       leading: CircleAvatar(
         radius: 24,
         backgroundColor: AppColors.ink,
-        child: Text(user.avatarInitials, style: const TextStyle(color: AppColors.paper)),
+        child: Text(widget.user.avatarInitials, style: const TextStyle(color: AppColors.paper)),
       ),
-      title: user.username,
-      subtitle: user.bio,
-      trailingLabel: user.following ? 'Following' : 'Follow',
+      title: widget.user.username,
+      subtitle: widget.user.bio,
+      trailingLabel: _loading ? null : (_following ? 'Following' : 'Follow'),
+      onTrailingTap: _loading ? null : _toggle,
     );
   }
 }
@@ -50,8 +86,15 @@ class _ResultRow extends StatelessWidget {
   final String title;
   final String subtitle;
   final String? trailingLabel;
+  final VoidCallback? onTrailingTap;
 
-  const _ResultRow({required this.leading, required this.title, required this.subtitle, this.trailingLabel});
+  const _ResultRow({
+    required this.leading,
+    required this.title,
+    required this.subtitle,
+    this.trailingLabel,
+    this.onTrailingTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -80,13 +123,20 @@ class _ResultRow extends StatelessWidget {
             ),
           ),
           if (trailingLabel != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.coral),
-                borderRadius: BorderRadius.circular(20),
+            GestureDetector(
+              onTap: onTrailingTap,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: trailingLabel == 'Following' ? AppColors.coral : Colors.transparent,
+                  border: Border.all(color: AppColors.coral),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  trailingLabel!,
+                  style: TextStyle(fontSize: 9.5, color: trailingLabel == 'Following' ? Colors.white : AppColors.coral),
+                ),
               ),
-              child: Text(trailingLabel!, style: const TextStyle(fontSize: 9.5, color: AppColors.coral)),
             ),
         ],
       ),
@@ -118,7 +168,7 @@ class RandomPostsGrid extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.network(p.imageUrl, fit: BoxFit.cover),
+              PostImage(source: p.imageUrl, fit: BoxFit.cover),
               Positioned(
                 left: 0,
                 right: 0,

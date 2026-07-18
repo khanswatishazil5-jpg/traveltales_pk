@@ -7,20 +7,23 @@ class ProfileModel {
   final String email;
   final String bio;
   final String avatarInitials;
+  final String? avatarImageBase64;
 
   const ProfileModel({
     required this.username,
     required this.email,
     required this.bio,
     required this.avatarInitials,
+    this.avatarImageBase64,
   });
 
-  ProfileModel copyWith({String? bio}) {
+  ProfileModel copyWith({String? bio, String? avatarImageBase64}) {
     return ProfileModel(
       username: username,
       email: email,
       bio: bio ?? this.bio,
       avatarInitials: avatarInitials,
+      avatarImageBase64: avatarImageBase64 ?? this.avatarImageBase64,
     );
   }
 }

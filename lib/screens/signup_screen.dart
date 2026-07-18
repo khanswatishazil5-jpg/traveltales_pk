@@ -75,7 +75,9 @@ class _SignupScreenState extends State<SignupScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-            child: Form(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: AppLayout.maxContentWidth),
+              child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -173,8 +175,20 @@ class _SignupScreenState extends State<SignupScreen> {
                           )
                         : const Text('Create account', style: TextStyle(fontWeight: FontWeight.w700)),
                   ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('Already have an account?', style: TextStyle(color: AppColors.charcoal)),
+                      TextButton(
+                        onPressed: _submitting ? null : () => Navigator.of(context).maybePop(),
+                        child: const Text('Log in', style: TextStyle(color: AppColors.teal, fontWeight: FontWeight.w700)),
+                      ),
+                    ],
+                  ),
                 ],
               ),
+            ),
             ),
           ),
         ),
@@ -185,16 +199,16 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget _buildHeader() {
     return Column(
       children: [
-        const Icon(Icons.flight, color: AppColors.coral, size: 36),
+        const Icon(Icons.eco, color: AppColors.coral, size: 36),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'Travel Tales',
-          style: TextStyle(fontFamily: 'Fraunces', fontSize: 30, fontWeight: FontWeight.w700, color: AppColors.ink),
+          style: TextStyle(fontFamily: AppFonts.display, fontSize: 30, fontWeight: FontWeight.w700, color: AppColors.ink),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'PAR AVION · EST. 2026',
-          style: TextStyle(fontFamily: 'Space Mono', fontSize: 11, letterSpacing: 1.6, color: AppColors.coral),
+          style: TextStyle(fontFamily: AppFonts.mono, fontSize: 11, letterSpacing: 1.6, color: AppColors.coral),
         ),
         const SizedBox(height: 20),
         const Text(

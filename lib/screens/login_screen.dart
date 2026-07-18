@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
+import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onAuthenticated;
@@ -62,6 +63,19 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _goToSignup() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SignupScreen(
+          onAuthenticated: () {
+            widget.onAuthenticated();
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -70,17 +84,19 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-            child: Form(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: AppLayout.maxContentWidth),
+              child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.flight, color: AppColors.coral, size: 36),
+                  const Icon(Icons.eco, color: AppColors.coral, size: 36),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Welcome back',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontFamily: 'Fraunces', fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.ink),
+                    style: TextStyle(fontFamily: AppFonts.display, fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.ink),
                   ),
                   const SizedBox(height: 24),
                   TextFormField(
@@ -132,8 +148,20 @@ class _LoginScreenState extends State<LoginScreen> {
                           )
                         : const Text('Log in', style: TextStyle(fontWeight: FontWeight.w700)),
                   ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Don't have an account?", style: TextStyle(color: AppColors.charcoal)),
+                      TextButton(
+                        onPressed: _submitting ? null : _goToSignup,
+                        child: const Text('Create one', style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.w700)),
+                      ),
+                    ],
+                  ),
                 ],
               ),
+            ),
             ),
           ),
         ),
