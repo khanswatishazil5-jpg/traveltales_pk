@@ -1,8 +1,22 @@
 import 'package:flutter/material.dart';
-import 'app.dart';
+import 'theme/app_theme.dart';
+import 'screens/home_shell.dart';
 
 void main() {
-  // Must run before anything touches SharedPreferences
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const NatureGalleryApp());
+  runApp(const TravelTalesApp());
 }
+
+class TravelTalesApp extends StatelessWidget {
+  const TravelTalesApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Travel Tales',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(),
+      home: const HomeShell(),
+    );
+  }
+}
+
