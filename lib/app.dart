@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'theme/theme_controller.dart';
 import 'screens/main_screen.dart';
 
+
 /// Root widget of the app. Its only jobs are:
 ///  1. Kick off loading the saved color when the app starts.
 ///  2. Listen to [ThemeController] and rebuild the MaterialApp's

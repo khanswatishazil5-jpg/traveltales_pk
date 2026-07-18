@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_page.dart';
 import 'gallery_page.dart';
 import 'profile_page.dart';
+import 'map_screen.dart';   // <-- ADDED THIS IMPORT
 
 /// Hosts the 3-tab bottom navigation bar (Explore / Collection / Account).
 class MainScreen extends StatefulWidget {
@@ -15,7 +16,7 @@ class _MainScreenState extends State<MainScreen> {
   int index = 0;
 
   final List<Widget> screens = const [
-    HomePage(),
+    MapScreen(),        // <-- CHANGED: HomePage() replaced with MapScreen()
     GalleryPage(),
     ProfilePage(),
   ];
