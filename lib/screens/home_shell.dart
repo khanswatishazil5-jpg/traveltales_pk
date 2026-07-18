@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'feed_screen.dart';
 import 'explore_screen.dart';
+import 'profile_screen.dart';
 
 class HomeShell extends StatefulWidget {
-  const HomeShell({super.key});
+  final VoidCallback onLoggedOut;
+
+  const HomeShell({super.key, required this.onLoggedOut});
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -13,10 +16,10 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
 
-  final _screens = const [
-    FeedScreen(),
-    ExploreScreen(),
-    Center(child: Text('Profile screen — next build.')),
+  late final _screens = [
+    const FeedScreen(),
+    const ExploreScreen(),
+    ProfileScreen(onLoggedOut: widget.onLoggedOut),
   ];
 
   @override
