@@ -6,6 +6,7 @@ import '../models/profile_model.dart';
 import '../models/post_model.dart';
 import '../services/auth_service.dart';
 import '../services/post_repository.dart';
+import '../services/follow_repository.dart';
 import '../widgets/post_image.dart';
 import 'create_post_screen.dart';
 
@@ -21,10 +22,12 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _authService = AuthService();
   final _postRepository = PostRepository();
+  final _followRepository = FollowRepository();
   final _picker = ImagePicker();
 
   ProfileModel? _profile;
   List<PostModel> _myPosts = [];
+  int _followingCount = 0;
   bool _loading = true;
 
   @override
@@ -36,12 +39,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _load() async {
     ProfileModel? profile;
     List<PostModel> myPosts = [];
+    int followingCount = 0;
     try {
       profile = await _authService.getProfile();
       if (profile != null) {
         final allLocalPosts = await _postRepository.getLocalPosts();
         myPosts = allLocalPosts.where((p) => p.username == profile!.username).toList();
       }
+      followingCount = await _followRepository.getFollowingCount();
     } catch (_) {
       profile = null;
     }
@@ -49,6 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       _profile = profile;
       _myPosts = myPosts;
+      _followingCount = followingCount;
       _loading = false;
     });
   }
@@ -166,7 +172,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     _StatColumn(label: 'Posts', value: '${_myPosts.length}'),
                     const _StatColumn(label: 'Followers', value: '0'),
-                    const _StatColumn(label: 'Following', value: '0'),
+                    _StatColumn(label: 'Following', value: '$_followingCount'),
                   ],
                 ),
               ),
@@ -175,7 +181,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 16),
           Text(
             profile.username,
-            style: const TextStyle(fontFamily: 'Fraunces', fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.ink),
+            style: TextStyle(fontFamily: AppFonts.display, fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.ink),
           ),
           const SizedBox(height: 4),
           Text(profile.email, style: const TextStyle(color: AppColors.charcoal, fontSize: 13)),
@@ -226,7 +232,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 28),
           const Divider(color: AppColors.line),
           const SizedBox(height: 20),
-          _myPosts.isEmpty ? const _EmptyPostsState() : _PostsGrid(posts: _myPosts),
+          _myPosts.isEmpty ? const _EmptyPostsState() : _PostsGrid(posts: _myPosts, onChanged: _load),
         ],
       ),
     );
@@ -259,7 +265,7 @@ class _Avatar extends StatelessWidget {
             child: imageBase64 == null
                 ? Text(
                     initials,
-                    style: const TextStyle(fontFamily: 'Fraunces', fontSize: 26, fontWeight: FontWeight.w700, color: AppColors.ink),
+                    style: TextStyle(fontFamily: AppFonts.display, fontSize: 26, fontWeight: FontWeight.w700, color: AppColors.ink),
                   )
                 : PostImage(source: imageBase64!, fit: BoxFit.cover),
           ),
@@ -291,7 +297,7 @@ class _StatColumn extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(fontFamily: 'Space Mono', fontSize: 10, letterSpacing: 0.8, color: AppColors.charcoal),
+          style: TextStyle(fontFamily: AppFonts.mono, fontSize: 10, letterSpacing: 0.8, color: AppColors.charcoal),
         ),
       ],
     );
@@ -300,7 +306,81 @@ class _StatColumn extends StatelessWidget {
 
 class _PostsGrid extends StatelessWidget {
   final List<PostModel> posts;
-  const _PostsGrid({required this.posts});
+  final VoidCallback onChanged;
+  const _PostsGrid({required this.posts, required this.onChanged});
+
+  Future<void> _showOptions(BuildContext context, PostModel post) async {
+    final repository = PostRepository();
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppColors.card,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined, color: AppColors.ink),
+              title: const Text('Edit caption'),
+              onTap: () => Navigator.pop(context, 'edit'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: AppColors.coral),
+              title: const Text('Delete', style: TextStyle(color: AppColors.coral)),
+              onTap: () => Navigator.pop(context, 'delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (action == 'delete') {
+      if (!context.mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppColors.card,
+          title: const Text('Delete this tale?'),
+          content: const Text('This can\'t be undone.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: AppColors.coral),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed == true) {
+        await repository.deletePost(post.id);
+        onChanged();
+      }
+    } else if (action == 'edit') {
+      if (!context.mounted) return;
+      final controller = TextEditingController(text: post.caption);
+      final newCaption = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppColors.card,
+          title: const Text('Edit caption'),
+          content: TextField(controller: controller, maxLines: 3),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: AppColors.coral),
+              onPressed: () => Navigator.pop(context, controller.text.trim()),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      );
+      if (newCaption != null) {
+        post.caption = newCaption;
+        await repository.updatePost(post);
+        onChanged();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -314,9 +394,12 @@ class _PostsGrid extends StatelessWidget {
         crossAxisSpacing: 6,
       ),
       itemBuilder: (context, i) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: PostImage(source: posts[i].imageUrl, fit: BoxFit.cover),
+        return GestureDetector(
+          onLongPress: () => _showOptions(context, posts[i]),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: PostImage(source: posts[i].imageUrl, fit: BoxFit.cover),
+          ),
         );
       },
     );
@@ -336,13 +419,13 @@ class _EmptyPostsState extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppColors.gold, width: 1.5, style: BorderStyle.solid),
       ),
-      child: const Column(
+      child: Column(
         children: [
           Icon(Icons.photo_camera_back_outlined, size: 32, color: AppColors.teal),
           SizedBox(height: 12),
           Text(
             'No travel tales yet',
-            style: TextStyle(fontFamily: 'Fraunces', fontWeight: FontWeight.w700, color: AppColors.ink),
+            style: TextStyle(fontFamily: AppFonts.display, fontWeight: FontWeight.w700, color: AppColors.ink),
           ),
           SizedBox(height: 6),
           Text(

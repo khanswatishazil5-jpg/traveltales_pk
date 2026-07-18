@@ -28,7 +28,7 @@ class _HomeShellState extends State<HomeShell> {
       appBar: AppBar(
         title: Row(
           children: [
-            const Icon(Icons.flight, color: AppColors.coral),
+            const Icon(Icons.eco, color: AppColors.coral),
             const SizedBox(width: 8),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,9 +41,11 @@ class _HomeShellState extends State<HomeShell> {
           ],
         ),
       ),
-      body: IndexedStack(
-        index: _index,
-        children: _screens,
+      body: ResponsiveCenter(
+        child: IndexedStack(
+          index: _index,
+          children: _screens,
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,

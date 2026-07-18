@@ -5,7 +5,7 @@ class PostModel {
   final String avatarInitials;
   final String location;
   final String imageUrl;
-  final String caption;
+  String caption;
   int likes;
   bool liked;
   bool saved;

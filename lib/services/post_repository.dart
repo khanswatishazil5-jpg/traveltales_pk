@@ -30,4 +30,27 @@ class PostRepository {
     raw.add(jsonEncode(post.toJson()));
     await prefs.setStringList(_kPostsKey, raw);
   }
+
+  Future<void> deletePost(String postId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList(_kPostsKey) ?? [];
+    raw.removeWhere((s) {
+      final json = jsonDecode(s) as Map<String, dynamic>;
+      return json['id'] == postId;
+    });
+    await prefs.setStringList(_kPostsKey, raw);
+  }
+
+  Future<void> updatePost(PostModel updated) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList(_kPostsKey) ?? [];
+    final newRaw = raw.map((s) {
+      final json = jsonDecode(s) as Map<String, dynamic>;
+      if (json['id'] == updated.id) {
+        return jsonEncode(updated.toJson());
+      }
+      return s;
+    }).toList();
+    await prefs.setStringList(_kPostsKey, newRaw);
+  }
 }

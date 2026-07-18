@@ -84,17 +84,19 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-            child: Form(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: AppLayout.maxContentWidth),
+              child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.flight, color: AppColors.coral, size: 36),
+                  const Icon(Icons.eco, color: AppColors.coral, size: 36),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Welcome back',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontFamily: 'Fraunces', fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.ink),
+                    style: TextStyle(fontFamily: AppFonts.display, fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.ink),
                   ),
                   const SizedBox(height: 24),
                   TextFormField(
@@ -159,6 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ],
               ),
+            ),
             ),
           ),
         ),
