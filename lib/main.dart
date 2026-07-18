@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
-import 'screens/home_shell.dart';
+import 'screens/auth_gate.dart';
 
 void main() {
   runApp(const TravelTalesApp());
@@ -15,8 +15,7 @@ class TravelTalesApp extends StatelessWidget {
       title: 'Travel Tales',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
-      home: const HomeShell(),
+      home: const AuthGate(),
     );
   }
 }
-
