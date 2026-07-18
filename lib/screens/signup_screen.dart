@@ -173,6 +173,17 @@ class _SignupScreenState extends State<SignupScreen> {
                           )
                         : const Text('Create account', style: TextStyle(fontWeight: FontWeight.w700)),
                   ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('Already have an account?', style: TextStyle(color: AppColors.charcoal)),
+                      TextButton(
+                        onPressed: _submitting ? null : () => Navigator.of(context).maybePop(),
+                        child: const Text('Log in', style: TextStyle(color: AppColors.teal, fontWeight: FontWeight.w700)),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),

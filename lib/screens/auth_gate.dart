@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
-import 'signup_screen.dart';
 import 'login_screen.dart';
 import 'home_shell.dart';
 
-enum _AuthStage { home, login, signup }
-
-/// Entry point widget: checks local auth state on launch and shows the
-/// right screen — signup (no account yet), login (account exists but
-/// logged out), or straight into the app (already logged in).
+/// Entry point widget: checks local auth state on launch.
+/// - Logged in already -> straight into the app.
+/// - Otherwise -> Login screen (the only first stop). Signup is reached
+///   from a link on the Login screen, not shown separately here.
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 
@@ -19,33 +17,32 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   final _authService = AuthService();
-  late Future<_AuthStage> _stageFuture;
+  late Future<bool> _loggedInFuture;
 
   @override
   void initState() {
     super.initState();
-    _stageFuture = _resolveStage();
+    _loggedInFuture = _resolveLoggedIn();
   }
 
-  Future<_AuthStage> _resolveStage() async {
+  Future<bool> _resolveLoggedIn() async {
     try {
-      final loggedIn = await _authService.isLoggedIn();
-      if (loggedIn) return _AuthStage.home;
-      final hasAccount = await _authService.hasAccount();
-      return hasAccount ? _AuthStage.login : _AuthStage.signup;
+      return await _authService.isLoggedIn();
     } catch (_) {
       // If local storage can't be read (e.g. plugin not registered yet),
-      // fail safe to signup rather than spinning forever.
-      return _AuthStage.signup;
+      // fail safe to the login screen rather than spinning forever.
+      return false;
     }
   }
 
-  void _refresh() => setState(() => _stageFuture = _resolveStage());
+  void _refresh() => setState(() {
+        _loggedInFuture = _resolveLoggedIn();
+      });
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<_AuthStage>(
-      future: _stageFuture,
+    return FutureBuilder<bool>(
+      future: _loggedInFuture,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Scaffold(
@@ -53,14 +50,10 @@ class _AuthGateState extends State<AuthGate> {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        switch (snapshot.data!) {
-          case _AuthStage.home:
-            return HomeShell(onLoggedOut: _refresh);
-          case _AuthStage.login:
-            return LoginScreen(onAuthenticated: _refresh);
-          case _AuthStage.signup:
-            return SignupScreen(onAuthenticated: _refresh);
+        if (snapshot.data == true) {
+          return HomeShell(onLoggedOut: _refresh);
         }
+        return LoginScreen(onAuthenticated: _refresh);
       },
     );
   }

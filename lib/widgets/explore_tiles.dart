@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/post_model.dart';
 import '../models/user_model.dart';
 import '../theme/app_theme.dart';
+import 'post_image.dart';
 
 /// One row in the Explore search results when searching Places.
 class PlaceResultTile extends StatelessWidget {
@@ -118,7 +119,7 @@ class RandomPostsGrid extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.network(p.imageUrl, fit: BoxFit.cover),
+              PostImage(source: p.imageUrl, fit: BoxFit.cover),
               Positioned(
                 left: 0,
                 right: 0,

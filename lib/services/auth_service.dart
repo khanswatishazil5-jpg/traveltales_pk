@@ -17,6 +17,7 @@ class AuthService {
   static const _kEmail = 'profile_email';
   static const _kBio = 'profile_bio';
   static const _kAvatarInitials = 'profile_avatar_initials';
+  static const _kAvatarImage = 'profile_avatar_image_base64';
   static const _kPasswordHash = 'profile_password_hash';
   static const _kLoggedIn = 'profile_logged_in';
 
@@ -52,7 +53,13 @@ class AuthService {
       email: prefs.getString(_kEmail) ?? '',
       bio: prefs.getString(_kBio) ?? '',
       avatarInitials: prefs.getString(_kAvatarInitials) ?? _initialsFrom(username),
+      avatarImageBase64: prefs.getString(_kAvatarImage),
     );
+  }
+
+  Future<void> updateAvatarImage(String base64Image) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kAvatarImage, base64Image);
   }
 
   /// Creates the one profile this device holds. Returns an error message

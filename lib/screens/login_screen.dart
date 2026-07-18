@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
+import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onAuthenticated;
@@ -60,6 +61,19 @@ class _LoginScreenState extends State<LoginScreen> {
         _errorText = 'Something went wrong logging in: $e';
       });
     }
+  }
+
+  Future<void> _goToSignup() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SignupScreen(
+          onAuthenticated: () {
+            widget.onAuthenticated();
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -131,6 +145,17 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                           )
                         : const Text('Log in', style: TextStyle(fontWeight: FontWeight.w700)),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Don't have an account?", style: TextStyle(color: AppColors.charcoal)),
+                      TextButton(
+                        onPressed: _submitting ? null : _goToSignup,
+                        child: const Text('Create one', style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.w700)),
+                      ),
+                    ],
                   ),
                 ],
               ),
