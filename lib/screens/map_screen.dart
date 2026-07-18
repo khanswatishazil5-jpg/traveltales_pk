@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../services/firestore_service.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -10,6 +11,7 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   // --- MAP CONTROLLER ---
+  final FirestoreService _firestoreService = FirestoreService();
   late GoogleMapController _mapController;
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(30.3753, 69.3451),
@@ -59,7 +61,6 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _loadInitialMarkers() {
-    // Add markers for all cities
     _pakistanCities.forEach((city, position) {
       _markers.add(
         Marker(
@@ -95,18 +96,16 @@ class _MapScreenState extends State<MapScreen> {
       _isSearching = false;
     });
 
-    // Animate to the city
     _mapController.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(target: position, zoom: 12),
       ),
     );
 
-    // Show a snackbar
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('📍 ${cityName} found!'),
-        duration: Duration(seconds: 2),
+        duration: const Duration(seconds: 2),
         backgroundColor: Colors.green.shade700,
       ),
     );
@@ -229,6 +228,35 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ),
         ],
+      ),
+
+      // ✅ MOVED BUTTON TO LEFT SIDE
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          try {
+            await _firestoreService.addPlace(
+              name: 'Test Place',
+              description: 'This is a test from Flutter!',
+              lat: 30.3753,
+              lng: 69.3451,
+            );
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Place added to Firestore!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('❌ Error: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        child: const Icon(Icons.add_location_alt),
       ),
     );
   }

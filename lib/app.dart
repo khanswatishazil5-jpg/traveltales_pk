@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'theme/theme_controller.dart';
 import 'screens/main_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 
 /// Root widget of the app. Its only jobs are:
