@@ -4,6 +4,7 @@ import '../services/api_service.dart';
 import '../widgets/post_card.dart';
 import '../theme/app_theme.dart';
 import 'create_post_screen.dart';
+import 'comments_screen.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -51,10 +52,7 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   void _comment(PostModel post) {
-    // Hook up to a comments screen/bottom sheet next.
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Comments screen — next build.')),
-    );
+    showCommentsSheet(context, postId: post.id);
   }
 
   Future<void> _openCreatePost() async {

@@ -6,6 +6,7 @@ import '../models/post_model.dart';
 import '../services/auth_service.dart';
 import '../services/post_repository.dart';
 import '../widgets/post_image.dart';
+import 'location_picker_screen.dart';
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -42,6 +43,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _errorText = "Couldn't open your photos: $e");
+    }
+  }
+
+  Future<void> _pickLocation() async {
+    final chosen = await showLocationPicker(context);
+    if (chosen != null) {
+      setState(() => _locationController.text = chosen);
     }
   }
 
@@ -132,9 +140,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             const SizedBox(height: 20),
             TextField(
               controller: _locationController,
+              readOnly: true,
+              onTap: _pickLocation,
               decoration: const InputDecoration(
                 labelText: 'Location',
+                hintText: 'Tap to choose a place in Pakistan',
                 prefixIcon: Icon(Icons.place_outlined),
+                suffixIcon: Icon(Icons.chevron_right),
               ),
             ),
             const SizedBox(height: 16),
