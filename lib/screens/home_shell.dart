@@ -7,16 +7,19 @@ import 'profile_screen.dart';
 class HomeShell extends StatefulWidget {
   final VoidCallback onLoggedOut;
 
-  const HomeShell({super.key, required this.onLoggedOut});
+  const HomeShell({
+    super.key,
+    required this.onLoggedOut,
+  });
 
   @override
   State<HomeShell> createState() => _HomeShellState();
 }
 
 class _HomeShellState extends State<HomeShell> {
-  int _index = 0;
+  int _index = 1; // Start on Explore
 
-  late final _screens = [
+  late final List<Widget> _screens = [
     const FeedScreen(),
     const ExploreScreen(),
     ProfileScreen(onLoggedOut: widget.onLoggedOut),
@@ -33,28 +36,54 @@ class _HomeShellState extends State<HomeShell> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
-                Text('Travel Tales', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-                Text('PAR AVION · EST. 2026',
-                    style: TextStyle(fontSize: 9, letterSpacing: 1.2, color: AppColors.coral)),
+                Text(
+                  'Travel Tales',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                  ),
+                ),
+                Text(
+                  'PAR AVION · EST. 2026',
+                  style: TextStyle(
+                    fontSize: 9,
+                    letterSpacing: 1.2,
+                    color: AppColors.coral,
+                  ),
+                ),
               ],
             ),
           ],
         ),
       ),
-      body: ResponsiveCenter(
-        child: IndexedStack(
-          index: _index,
-          children: _screens,
-        ),
+      body: IndexedStack(
+        index: _index,
+        children: _screens,
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
+        onDestinationSelected: (i) {
+          setState(() {
+            _index = i;
+          });
+        },
         backgroundColor: AppColors.card,
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.explore_outlined), selectedIcon: Icon(Icons.explore), label: 'Explore'),
-          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.explore_outlined),
+            selectedIcon: Icon(Icons.explore),
+            label: 'Explore',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
         ],
       ),
     );

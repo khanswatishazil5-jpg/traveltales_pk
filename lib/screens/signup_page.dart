@@ -17,7 +17,7 @@ class _SignupPageState extends State<SignupPage> {
   bool _isLoading = false;
 
   Future<void> _signUp() async {
-    // Validate passwords match
+    // Validate
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -28,43 +28,53 @@ class _SignupPageState extends State<SignupPage> {
       return;
     }
 
-    // ✅ FIX: Set loading BEFORE async work (synchronous setState)
-    setState(() {
-      _isLoading = true;
-    });
+    if (_passwordController.text.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Password must be at least 6 characters'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // ✅ Set loading
+    setState(() => _isLoading = true);
 
     try {
-      // 1. Create user with email/password
+      // 1. Create user
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      // 2. Save user data to Firestore
+      // 2. Save to Firestore
       final user = userCredential.user;
       if (user != null) {
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
           'uid': user.uid,
           'name': _nameController.text.trim(),
           'email': user.email,
-          'createdAt': FieldValue.serverTimestamp(),
+          'createdAt': DateTime.now().toIso8601String(),
         });
-
-        // Update display name
         await user.updateDisplayName(_nameController.text.trim());
       }
 
-      // ✅ Success – AuthGate will redirect to MainScreen
-      // No need to navigate manually
+      print("✅ Signup successful for: ${user?.email}");
+
+      // ✅ IMPORTANT: DON'T set loading to false here
+      // The AuthChecker will redirect IMMEDIATELY!
 
     } on FirebaseAuthException catch (e) {
+      String message = '❌ ${e.message}';
+      if (e.code == 'email-already-in-use') {
+        message = '❌ This email is already in use';
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ ${e.message}'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
       );
+      setState(() => _isLoading = false);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -72,13 +82,7 @@ class _SignupPageState extends State<SignupPage> {
           backgroundColor: Colors.red,
         ),
       );
-    } finally {
-      // ✅ FIX: Set loading to false AFTER async work (synchronous setState)
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      setState(() => _isLoading = false);
     }
   }
 
@@ -87,7 +91,7 @@ class _SignupPageState extends State<SignupPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create Account'),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Colors.green.shade700,
         foregroundColor: Colors.white,
       ),
       body: Padding(
@@ -95,7 +99,6 @@ class _SignupPageState extends State<SignupPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Username
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(
@@ -105,8 +108,6 @@ class _SignupPageState extends State<SignupPage> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Email
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(
@@ -117,20 +118,16 @@ class _SignupPageState extends State<SignupPage> {
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 16),
-
-            // Password
             TextField(
               controller: _passwordController,
               obscureText: true,
               decoration: const InputDecoration(
-                labelText: 'Password',
+                labelText: 'Password (min 6 chars)',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.lock),
               ),
             ),
             const SizedBox(height: 16),
-
-            // Confirm Password
             TextField(
               controller: _confirmPasswordController,
               obscureText: true,
@@ -141,8 +138,6 @@ class _SignupPageState extends State<SignupPage> {
               ),
             ),
             const SizedBox(height: 24),
-
-            // Create Account Button
             _isLoading
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
@@ -152,18 +147,10 @@ class _SignupPageState extends State<SignupPage> {
                 backgroundColor: Colors.green.shade700,
                 foregroundColor: Colors.white,
               ),
-              child: const Text(
-                'Create account',
-                style: TextStyle(fontSize: 16),
-              ),
+              child: const Text('Create account'),
             ),
-            const SizedBox(height: 12),
-
-            // Login link
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
+              onPressed: () => Navigator.pop(context),
               child: const Text("Already have an account? Log in"),
             ),
           ],
